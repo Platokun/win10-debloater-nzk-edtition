@@ -2,6 +2,7 @@
 remember to <code>Set-ExecutionPolicy Unrestricted -Force</code>
 
 then <code>.\Windows10DebloaterGUI.ps1</code>
+also this is exclusively changes to the gui file
 
 this is a fork from the legendairy Scynex largely to just add in functionality to select from *all* installed apps and delete them because why spend an hour or two freshining up yoursystem with a fresh install when you can just spend 4 hours coding a button do to it for you
 also i only modified the gui debloater file
