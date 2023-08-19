@@ -212,8 +212,9 @@ Add-Type -AssemblyName System.Windows.Forms
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
 $Form                            = New-Object system.Windows.Forms.Form
-$Form.ClientSize                 = New-Object System.Drawing.Point(500,650)
-#nzk edited drawing.point clientsize but it still not showing all of uninstaller button
+$Form.ClientSize                 = New-Object System.Drawing.Point(500,555)
+#nzk edited drawing.point clientsize but it still not showing all of uninstaller button. 
+#so i made it so that the button next to the install net35 button coz why learn when u can circomvent
 $Form.StartPosition              = 'CenterScreen'
 $Form.FormBorderStyle            = 'FixedSingle'
 $Form.MinimizeBox                = $false
@@ -464,7 +465,7 @@ $RemoveRegkeys.ForeColor         = [System.Drawing.ColorTranslator]::FromHtml("#
 $InstallNet35                    = New-Object system.Windows.Forms.Button
 $InstallNet35.FlatStyle          = 'Flat'
 $InstallNet35.text               = "INSTALL .NET V3.5"
-$InstallNet35.width              = 460
+$InstallNet35.width              = 225
 $InstallNet35.height             = 30
 $InstallNet35.Anchor             = 'top,right,left'
 $InstallNet35.location           = New-Object System.Drawing.Point(10,120)
@@ -476,10 +477,10 @@ $InstallNet35.ForeColor          = [System.Drawing.ColorTranslator]::FromHtml("#
 $UninstallButton                    = New-Object System.Windows.Forms.Button
 $UninstallButton.FlatStyle          = 'Flat'
 $UninstallButton.Text               = "Current Installed Uninstaller"
-$UninstallButton.width              = 460
+$UninstallButton.width              = 225
 $UninstallButton.height             = 30
 $UninstallButton.Anchor             = 'top,right,left'
-$UninstallButton.Location = New-Object System.Drawing.Point(10,150) # Adjust the location as needed
+$UninstallButton.Location = New-Object System.Drawing.Point(245,120) # Adjust the location as needed
 $UninstallButton.Font               = New-Object System.Drawing.Font('Consolas',9)
 $UninstallButton.ForeColor          = [System.Drawing.ColorTranslator]::FromHtml("#eeeeee")
 
