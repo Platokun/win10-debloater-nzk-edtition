@@ -974,33 +974,59 @@ $START_MENU_LAYOUT = @"
             $apps = Get-AppxPackage | Select-Object Name
             return $apps
         }
-        function UninstallMenu {
-            $apps = ListInstalledApps
-            $form = New-Object System.Windows.Forms.Form
-            $form.Text = "Choose an app to uninstall"
-            $form.Size = New-Object System.Drawing.Size(400, 200)
-            
-            $dropdown = New-Object System.Windows.Forms.ComboBox
-            $dropdown.Location = New-Object System.Drawing.Point(10, 10)
-            $dropdown.Size = New-Object System.Drawing.Size(300, 30)
-            $apps | ForEach-Object { $dropdown.Items.Add($_.Name) }
-            
-            $button = New-Object System.Windows.Forms.Button
-            $button.Location = New-Object System.Drawing.Point(10, 50)
-            $button.Size = New-Object System.Drawing.Size(100, 30)
-            $button.Text = "Uninstall"
-            $button.Add_Click({
-                $appToUninstall = $apps | Where-Object { $_.Name -eq $dropdown.SelectedItem }
-                Write-Host ("Uninstalling {0}..." -f $appToUninstall.Name)
-                Get-AppxPackage -Name $appToUninstall.Name | Remove-AppxPackage
-                $form.Close()
+
+        #nzk
+        function ShowUninstallAppWindow {
+            # Create a new form for the popup window
+            $UninstallForm = New-Object System.Windows.Forms.Form
+            $UninstallForm.Text = "Select Apps to Uninstall"
+            $UninstallForm.Size = New-Object System.Drawing.Size(400, 500)
+        
+            # Create a CheckedListBox to display the apps
+            $AppList = New-Object System.Windows.Forms.CheckedListBox
+            $AppList.Location = New-Object System.Drawing.Point(10, 10)
+            $AppList.Size = New-Object System.Drawing.Size(360, 400)
+        
+            # Get the list of uninstallable apps and add them to the CheckedListBox
+            $apps = Get-AppxPackage | Select-Object Name
+            foreach ($app in $apps) {
+                $AppList.Items.Add($app.Name, $false) # Unchecked by default
+            }
+        
+            # Add a button to save the selected apps
+            $SaveButton = New-Object System.Windows.Forms.Button
+            $SaveButton.Text = "Save List"
+            $SaveButton.Location = New-Object System.Drawing.Point(10, $AppList.Bottom + 10)
+            $SaveButton.Add_Click({
+                $selectedApps = $AppList.CheckedItems -join "`r`n"
+                $selectedApps | Out-File "selected_apps.txt"
+                Write-Host "Selected apps have been saved to selected_apps.txt"
             })
             
-            $form.Controls.Add($dropdown)
-            $form.Controls.Add($button)
-            $form.ShowDialog()
+        
+            # Add a button to uninstall the selected apps
+            $UninstallSelectedButton = New-Object System.Windows.Forms.Button
+            $UninstallSelectedButton.Text = "Uninstall Selected"
+            $UninstallSelectedButton.Location = New-Object System.Drawing.Point(10, $SaveButton.Bottom + 10)
+            $UninstallSelectedButton.Add_Click({
+                # Loop through the selected apps and uninstall them
+                foreach ($appName in $AppList.CheckedItems) {
+                    Write-Host ("Uninstalling {0}..." -f $appName)
+                    Get-AppxPackage -Name $appName | Remove-AppxPackage -Verbose
+                }
+                Write-Host "Selected apps have been successfully uninstalled!"
+            })
+        
+            # Add controls to the form
+            $UninstallForm.Controls.Add($AppList)
+            $UninstallForm.Controls.Add($SaveButton)
+            $UninstallForm.Controls.Add($UninstallSelectedButton) # Add the new button
+        
+            # Show the form
+            $UninstallForm.ShowDialog()
         }
-
+        
+        
         Write-Host "Initiating Sysprep"
         Begin-SysPrep
         Write-Host "Removing bloatware apps."
@@ -1520,10 +1546,94 @@ $InstallNet35.Add_Click( {
         Write-Host ".NET 3.5 has been successfully installed!"
     } )
     #NZK
-$UninstallButton.Add_Click({ 
+$UninstallButton.Add_Click({
     Write-Host "Initializing Uninstall Menu"
-    UninstallMenu
-    Write-Host "Uninstall Menu has been successfully installed!" })
+
+    $UninstallForm = New-Object System.Windows.Forms.Form
+    $UninstallForm.Text = "Select Apps to Uninstall"
+    $UninstallForm.Size = New-Object System.Drawing.Size(400, 500)
+    $UninstallForm.BackColor = [System.Drawing.ColorTranslator]::FromHtml("#252525")
+
+    $AppList = New-Object System.Windows.Forms.CheckedListBox
+    $AppList.Location = New-Object System.Drawing.Point(10, 10)
+    $AppList.Size = New-Object System.Drawing.Size(360, 400)
+    $AppList.BackColor = [System.Drawing.ColorTranslator]::FromHtml("#252525")
+    $AppList.ForeColor = [System.Drawing.ColorTranslator]::FromHtml("#eeeeee")
+
+# Get UWP apps
+$uwpapps = Get-AppxPackage | Select-Object -ExpandProperty Name
+
+# Get 32-bit applications from the registry
+$desktopApps32 = Get-ItemProperty 'HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*' |
+                 Where-Object { $_.DisplayName -ne $null } |
+                 Select-Object -ExpandProperty DisplayName
+
+# Get 64-bit applications from the registry
+$desktopApps64 = Get-ItemProperty 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*' |
+                 Where-Object { $_.DisplayName -ne $null } |
+                 Select-Object -ExpandProperty DisplayName
+
+# Combine the lists
+$allApps = $uwpapps + $desktopApps32 + $desktopApps64
+
+# Sort the apps
+$sortedApps = $allApps | Sort-Object
+
+# Print the apps to the console for debugging
+$sortedApps | ForEach-Object { Write-Host "App: $_" }
+
+# Add sorted apps to the CheckedListBox
+foreach ($app in $sortedApps) {
+    $AppList.Items.Add($app, $false)
+}
+
+
+# Sort the apps
+$sortedApps = $allApps | Sort-Object
+
+# Add sorted apps to the CheckedListBox
+foreach ($app in $sortedApps) {
+    $AppList.Items.Add($app, $false)
+}
+
+
+    # Add sorted apps to the CheckedListBox
+    foreach ($app in $sortedApps) {
+        $label = ""
+        if ($global:Bloatware -contains $app.Name) {
+            $label += "In Bloatware Remove "
+        }
+        # Add other conditions here, such as install date, location, size, etc.
+
+        $AppList.Items.Add($label + $app.Name, $false)
+    }
+
+    # Add a button to uninstall the selected apps
+    $UninstallSelectedButton = New-Object System.Windows.Forms.Button
+    $UninstallSelectedButton.Text = "Uninstall Selected"
+    $UninstallSelectedButton.Location = New-Object System.Drawing.Point(10, $AppList.Bottom + 10)
+    $UninstallSelectedButton.Add_Click({
+        # Loop through the selected apps and uninstall them
+        foreach ($appName in $AppList.CheckedItems) {
+            Write-Host ("Uninstalling {0}..." -f $appName)
+            Get-AppxPackage -Name $appName | Remove-AppxPackage -Verbose
+        }
+        Write-Host "Selected apps have been successfully uninstalled!"
+    })
+
+    # Add controls to the form
+    $UninstallForm.Controls.Add($AppList)
+    $UninstallForm.Controls.Add($UninstallSelectedButton)
+
+    # Show the form
+    $UninstallForm.ShowDialog()
+
+    Write-Host "Uninstall Menu has been successfully initialized!"
+})
+    
+    
+    
+    
 
 $EnableDarkMode.Add_Click( {
         Write-Host "Enabling Dark Mode"
@@ -1542,5 +1652,7 @@ $DisableDarkMode.Add_Click( {
         Write-Host "Disabled"
     }
 )
+#nzk
+
 
 [void]$Form.ShowDialog()
